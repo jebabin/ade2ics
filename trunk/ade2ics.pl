@@ -4,10 +4,25 @@
 # Extended by:
 #	Ronan Keryell, rk in enstb.org
 #	Matthieu Moy, Matthieu.Moy in grenoble-inp.fr
-# 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 # TODO
-# - iCal output should respect standards more carefully
-# - Base config should be in an external file
+# - Base config should be in an external file.
+# - TZID should not be statically set.
+# - Add possibility to stop the script before starting to log on the website if option c match some string
+#	(would be usefull for the cgi version where some users still try to load older project no longer used
 #
 # For history see the end of the script
 
@@ -110,9 +125,9 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		$opts{'p'} = param('p') if (defined(param('p')));
 		$opts{'t'} = param('t') if (defined(param('t')));
 		$opts{'s'} = param('s') if (defined(param('s')));
-		$opts{'d'} = param('d') if (defined(param('d')));
+#		$opts{'d'} = param('d') if (defined(param('d')));
 	} else {
-		print "Usage: $0?c=Chemin[&e=school][&u=base_url][&l=login][&p=password][&t][&d]\n";
+		print "Usage: $0?c=Chemin[&e=school][&u=base_url][&l=login][&p=password][&t]\n";
 		exit 1;
 	}
 }
@@ -126,12 +141,12 @@ if ((defined($opts{'p'})) and ($opts{'p'} eq "")) {
 }
 
 if ($opts{'t'}) {
-    # Create a time stamped output file:
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-    my $output_file_name = sprintf("calendar.%d-%02d-%02d_%02d:%02d:%02d.ics",
+	# Create a time stamped output file:
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+	my $output_file_name = sprintf("calendar.%d-%02d-%02d_%02d:%02d:%02d.ics",
 				   $year+1900, $mon, $mday, $hour, $min, $sec);
 	close(STDOUT);
-    open(STDOUT, ">", $output_file_name) or die "open of " . $output_file_name . " failed!";
+	open(STDOUT, ">", $output_file_name) or die "open of " . $output_file_name . " failed!";
 }
 
 foreach (split(':', $opts{'c'})) {
@@ -145,27 +160,27 @@ my $mech = WWW::Mechanize->new(agent => 'ADEics 0.2', cookie_jar => {});
 
 # login in
 $mech->get($opts{'u'}.'standard/index.jsp');
-die "Error 1 : check if base_url work" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '1', $opts{'d'});
+die "Error 1 : failed to load welcome page. Check if base_url works." if (!$mech->success());
 
 if ($opts{'s'}) {
 	$mech->submit_form(fields => {username => $opts{'l'}, password => $opts{'p'}});
 } else {
 	$mech->submit_form(fields => {login => $opts{'l'}, password => $opts{'p'}});
 }
-print STDERR $mech->content."\n" if ($opts{'d'});
-die "Error 2" if (!$mech->success());
+debug_url($mech, '2', $opts{'d'});
+die "Error 2 : Login failed." if (!$mech->success());
 
 if ($opts{'s'}) {
 	$mech->follow_link( n => 1 );
-	print STDERR $mech->content."\n" if ($opts{'d'});
+	debug_url($mech, '2.1', $opts{'d'});
 	die "Error 2.1" if (!$mech->success());
 }
 
 # Getting projet list
 $mech->get($opts{'u'}.'standard/projects.jsp');
-die "Error 2.2 : check if ADE url ($opts{'u'}) works" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '2.2', $opts{'d'});
+die "Error 2.2 : Failed to load projets.jps. Check if ADE url ($opts{'u'}) works." if (!$mech->success());
 
 # Choosing projectId
 my $p = HTML::TokeParser->new(\$mech->content);
@@ -173,21 +188,20 @@ my $token = $p->get_tag("select");
 
 my $projid = -1;
 while (($projid == -1) && (my $token = $p->get_tag("option"))) {
-      if($p->get_trimmed_text eq $tree[0]) {
-	      $projid = $token->[1]{value};
+	if($p->get_trimmed_text eq $tree[0]) {
+		$projid = $token->[1]{value};
 	}
 }
-die "Error 3 : $tree[0] does not exist" if ($projid == -1);
+die "Error 3 : $tree[0] does not exist. Check argument to -c option." if ($projid == -1);
 
 $mech->submit_form(fields => {projectId => $projid});
-die "Error 4" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
-
+debug_url($mech, '4', $opts{'d'});
+die "Error 4 : Can't select $tree[0]." if (!$mech->success());
 
 # We need to load tree.jsp to find category name
 $mech->get($opts{'u'}.'standard/gui/tree.jsp');
-die "Error 5" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '5', $opts{'d'});
+die "Error 5 : Can't load standard/gui/tree.jsp." if (!$mech->success());
 
 # So, finding it
 $p = HTML::TokeParser->new(\$mech->content);
@@ -200,13 +214,13 @@ while ((!defined($category)) && (my $token = $p->get_tag("a"))) {
 	}
 }
 $category =~ s/.*\('(.*?)'\)$/$1/;
-die "Error 6 : $tree[1] does not exist" if (!defined($category));
+die "Error 6 : $tree[1] does not exist. Check argument to -c option." if (!defined($category));
 
 
 # We need load the category chosed on command line to find branchID
 $mech->get($opts{'u'}.'standard/gui/tree.jsp?category='.$category.'&expand=false&forceLoad=false&reload=false&scroll=0');
-die "Error 7" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '7', $opts{'d'});
+die "Error 7 : Can't load standard/gui/tree.jsp?category=$category ..." if (!$mech->success());
 
 
 # We loop until last branchID
@@ -224,7 +238,7 @@ for (2..$#tree) {
 		}
 	}
 	$branchId =~ s/.*\((\d+),\s+.*/$1/;
-	print STDERR $mech->content."\n" if ($opts{'d'});
+	debug_url($mech, "8.$_", $opts{'d'});
 	die "Error 8.$_ : $tree[$_] does not exist" if (!defined($branchId));
 
 	if ($_ == $#tree) {
@@ -234,23 +248,23 @@ for (2..$#tree) {
 	}
 }
 
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '9', $opts{'d'});
 die "Error 9 : $tree[$#tree] does not exist" if (!defined($branchId));
 
 # We need to choose a week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?forceLoad=true');
-die "Error 10" if (!$mech->success());
-print $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '10', $opts{'d'});
+die "Error 10 : Can't load custom/modules/plannings/pianoWeeks.jsp?forceLoad=true." if (!$mech->success());
 
 # then we choose all week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all');
-die "Error 10bis" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '10bis', $opts{'d'});
+die "Error 10bis : Can't load custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all." if (!$mech->success());
 
 # Get planning
 $mech->get($opts{'u'}.'custom/modules/plannings/info.jsp');
-die "Error 11" if (!$mech->success());
-print STDERR $mech->content."\n" if ($opts{'d'});
+debug_url($mech, '11', $opts{'d'});
+die "Error 11 : Can't load custom/modules/plannings/info.jsp." if (!$mech->success());
 
 # Parse planning to get event
 $p = HTML::TokeParser->new(\$mech->content);
@@ -397,8 +411,8 @@ sub ics_output {
                 my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
 
 		print "BEGIN:VEVENT\n";
-		print "DTSTART:$ics_start_date\n";
-		print "DTEND:$ics_stop_date\n";
+		print "DTSTART;TZID=Europe/Paris:$ics_start_date\n";
+		print "DTEND;TZID=Europe/Paris:$ics_stop_date\n";
 		print "SUMMARY:$course\n";
 		print "DTSTAMP:$dtstamp\n";
 		print "UID:edt-$id-0\n";		
@@ -418,9 +432,29 @@ sub ics_output {
 	}
 }
 
+sub debug_url {
+	my ($mech, $file_number, $d) = @_;
+
+	if ($d) {
+		my $file_name = "ade2ics-debug-".$file_number.".html";
+		open(FILE, ">$file_name") or die "Can't open file $file_name: $!";
+		print FILE $file_number;
+		print FILE "<!--".$mech->uri()."-->\n";
+		print FILE $mech->content."\n";
+		close(FILE);
+	}
+}
+
+
 __END__
 
 History (doesn't follow commit revision)
+
+Revision 2.9 2009/10/04
+Add TZID=Europe/Paris for each event as per Matthieu Moy (Ensimag) try.
+	Having TZID in this format for each event and globaly has "GMT +0100 (Standard) / GMT +0200 (Daylight)" seems to make every calendar program happy...
+Added debug_url to dump debug as file (Matthieu Moy (Ensimag))
+More precise error messages. (Matthieu Moy (Ensimag))
 
 Revision 2.8 2009/09/03
 Fixed a bug that skiped half of the event.
