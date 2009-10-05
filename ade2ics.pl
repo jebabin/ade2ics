@@ -257,12 +257,14 @@ if ($opts{'a'}) {
 		}
 	}
 
-	debug_url($mech, '090', $opts{'d'});
-	die "Error 9 : $tree[$#tree] does not exist" if (!defined($branchId));
+	debug_url($mech, '091', $opts{'d'});
+	die "Error 9.1 : $tree[$#tree] does not exist" if (!defined($branchId));
 
 } elsif ($opts{'n'}) {
 	$mech->get($opts{'u'}.'custom/modules/plannings/direct_planning.jsp?resources='.$opts{'n'});
-	debug_url($mech, '091', $opts{'d'});
+	debug_url($mech, '092', $opts{'d'});
+	die "Error 9.2 : Can't load custom/modules/plannings/direct_planning.jsp?resources=".$opts{'n'} if (!$mech->success());
+
 }
 
 # We need to choose a week
