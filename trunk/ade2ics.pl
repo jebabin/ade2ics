@@ -54,17 +54,17 @@ my %default_config;
 $default_config{'TelecomBretagne'}{'u'} = 'http://edt.enst-bretagne.fr/ade/'; # (http://edt.enst-bretagne.fr/ade/ will not work)
 $default_config{'TelecomBretagne'}{'l'} = '';
 $default_config{'TelecomBretagne'}{'p'} = ''; # Should be commented if your ADE system don't need a password
-$default_config{'TelecomBretagne'}{'t'} = 0;
+$default_config{'TelecomBretagne'}{'w'} = 0;
 $default_config{'TelecomBretagne'}{'d'} = 0;
-$default_config{'TelecomBretagne'}{'s'} = 1;
+$default_config{'TelecomBretagne'}{'c'} = 1;
 
 # For Ensimag
 $default_config{'Ensimag'}{'u'} = 'http://ade52-inpg.grenet.fr/ade/';
 $default_config{'Ensimag'}{'l'} = 'voirIMATEL';
 $default_config{'Ensimag'}{'p'} = ''; # Should be commented if your ADE system don't need a password
-$default_config{'Ensimag'}{'t'} = 0;
+$default_config{'Ensimag'}{'w'} = 0;
 $default_config{'Ensimag'}{'d'} = 0;
-$default_config{'Ensimag'}{'s'} = 0;
+$default_config{'Ensimag'}{'c'} = 0;
 
 my %opts;
 my @tree;
@@ -73,58 +73,65 @@ my @tree;
 binmode(STDOUT, ":encoding(UTF-8)");
 $| = 1;
 
-$opts{e} = $default_school;
+$opts{'s'} = $default_school;
 
 if (!defined $ENV{REQUEST_METHOD}) {
 
-	GetOptions(\%opts, 'c=s', 'u=s', 'l=s', 'e=s', 'p:s', 't!', 'd!', 's!');
+	GetOptions(\%opts, 'y=s', 'n=s', 'a=s', 'u=s', 'l=s', 's=s', 'p:s', 'w!', 'd!', 'c!');
 
-	$opts{'u'} = $opts{'u'} || $default_config{$opts{'e'}}{'u'};
-	$opts{'l'} = $opts{'l'} || $default_config{$opts{'e'}}{'l'};
-	$opts{'p'} = $opts{'p'} || $default_config{$opts{'e'}}{'p'};
-	$opts{'t'} = $opts{'t'} || $default_config{$opts{'e'}}{'t'};
-	$opts{'d'} = $opts{'d'} || $default_config{$opts{'e'}}{'d'};
-	$opts{'s'} = $opts{'s'} || $default_config{$opts{'e'}}{'s'};
+	$opts{'u'} = $opts{'u'} || $default_config{$opts{'s'}}{'u'};
+	$opts{'l'} = $opts{'l'} || $default_config{$opts{'s'}}{'l'};
+	$opts{'p'} = $opts{'p'} || $default_config{$opts{'s'}}{'p'};
+	$opts{'w'} = $opts{'w'} || $default_config{$opts{'s'}}{'w'};
+	$opts{'d'} = $opts{'d'} || $default_config{$opts{'s'}}{'d'};
+	$opts{'c'} = $opts{'c'} || $default_config{$opts{'s'}}{'c'};
 
-	if (!defined($opts{'c'})) {
-		print STDERR "Usage: $0 -c Path [-e school_name] [-u base_url] [-l login] [-p [password]] [-t] [-d] [-s]\n";
-		print STDERR " -c is expecting the path through the page you need to click to get the information you are looking for, encoded in ISO-8859-1 (see examples)\n";
-		print STDERR " -e is expecting you school name. It loads default value of -u -l -p -t- d- s for your school. Default school is : $default_school. Available school are (case sensitive):\n";
+	if (!(defined($opts{'y'}) and (defined($opts{'a'}) xor defined($opts{'n'})))) {
+		print STDERR "Usage: $0 -y Projet_name -a Alphabetical_path [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
+		print STDERR "Usage: $0 -y Projet_name -n Numerical_value   [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
+#		print STDERR "Usage: $0 -y Projet_name -a Alphabetical_path -n Numerical_value [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
+		print STDERR " -y : the projet name\n";
+		print STDERR " -a : alphabetical path through the ressource, encoded in ISO-8859-1 (see examples)\n";
+		print STDERR " -n : numerical value of the ressource\n";
+#		print STDERR "\t You can use both -a and -n\n";
+		print STDERR " -s : school name. It loads a set of default value for -u -l -p -c -w- -d for your school. Default school is : $default_school. Available school are (case sensitive):\n";
 		print STDERR "\t- $_\n" foreach (keys %default_config);
-		print STDERR " -u is expecting the ADE location to peek into\n";
-		print STDERR " -l is expecting your login name for authentication purpose\n";
-		print STDERR " -p is expecting the password to use for authentication purpose\n";
-		print STDERR "\t 	if you just use -p without password, you will be prompted for it. recommanded for security !\n";
-		print STDERR " -t write the schedule in time-stamped \"calendar.\" file to track modifications to your calendar.\n";
-		print STDERR " -d enable verbose output\n";
-		print STDERR " -s enable CAS Authentification, as used at Telecom Bretagne\n";
+		print STDERR " -u : the ADE location to peek into\n";
+		print STDERR " -l : login name for authentication purpose\n";
+		print STDERR " -p : password to use for authentication purpose\n";
+		print STDERR "\t if you just use -p without password, you will be prompted for it. recommanded for security !\n";
+		print STDERR " -w : write the schedule in time-stamped \"calendar.\" file to track modifications to your calendar.\n";
+		print STDERR " -d : enable debug output\n";
+		print STDERR " -c : enable CAS Authentification, as used at Telecom Bretagne\n";
 		print STDERR "\nSome examples:\n";
-		print STDERR " $0 -l jebabin -p -c '2007-2008:Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
-		print STDERR " $0 -e Ensimag -p somepassword -c 'ENSIMAG2009-2010:Enseignants:M:Moy Matthieu'\n";
+		print STDERR " $0 -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
+		print STDERR " $0 -e Ensimag -p somepassword -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
+		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717\n";
 		print STDERR " even more:\n";
-		print STDERR " $0 -s -l jebabin -p -c '2007-2008:Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
-		print STDERR " $0 -t -s -l keryell -p some_password -c '2007-2008:Enseignants:H à K:KERYELL Ronan'\n";
-		print STDERR " $0 -u http://ade52-inpg.grenet.fr/ade/ -l voirIMATEL -p somepassword -c 'ENSIMAG2009-2010:Enseignants:M:Moy Matthieu'\n";
+		print STDERR " $0 -c -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
+		print STDERR " $0 -w -c -l keryell -p some_password -y '2007-2008' -a 'Enseignants:H à K:KERYELL Ronan'\n";
+		print STDERR " $0 -u http://ade52-inpg.grenet.fr/ade/ -l voirIMATEL -p somepassword -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
 		exit 1;
 	}
 } else {
 	print header(-type => 'text/calendar; method=request; charset=UTF-8;', -attachment => 'edt.ics');
-	if (defined(param('c'))) {
-		$opts{'e'} = param('e') if (defined(param('e')));
+	if (defined(param('a')) or defined(param('n'))) {
+		$opts{'s'} = param('s') if (defined(param('s')));
 
-		$opts{'u'} = $default_config{$opts{'e'}}{'u'};
-		$opts{'l'} = $default_config{$opts{'e'}}{'l'};
-		$opts{'p'} = $default_config{$opts{'e'}}{'p'};
-		$opts{'t'} = $default_config{$opts{'e'}}{'t'};
-		$opts{'d'} = $default_config{$opts{'e'}}{'d'};
-		$opts{'s'} = $default_config{$opts{'e'}}{'s'};
+		$opts{'u'} = $default_config{$opts{'s'}}{'u'};
+		$opts{'l'} = $default_config{$opts{'s'}}{'l'};
+		$opts{'p'} = $default_config{$opts{'s'}}{'p'};
+		$opts{'w'} = $default_config{$opts{'s'}}{'w'};
+		$opts{'d'} = $default_config{$opts{'s'}}{'d'};
+		$opts{'c'} = $default_config{$opts{'s'}}{'c'};
 
-		$opts{'c'} = param('c');
+		$opts{'a'} = param('a');
+		$opts{'n'} = param('n');
 		$opts{'u'} = param('u') if (defined(param('u')));
 		$opts{'l'} = param('l') if (defined(param('l')));
 		$opts{'p'} = param('p') if (defined(param('p')));
-		$opts{'t'} = param('t') if (defined(param('t')));
-		$opts{'s'} = param('s') if (defined(param('s')));
+		$opts{'w'} = param('w') if (defined(param('w')));
+		$opts{'c'} = param('c') if (defined(param('c')));
 #		$opts{'d'} = param('d') if (defined(param('d')));
 	} else {
 		print "Usage: $0?c=Chemin[&e=school][&u=base_url][&l=login][&p=password][&t]\n";
@@ -140,7 +147,7 @@ if ((defined($opts{'p'})) and ($opts{'p'} eq "")) {
 	ReadMode('normal');
 }
 
-if ($opts{'t'}) {
+if ($opts{'w'}) {
 	# Create a time stamped output file:
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
 	my $output_file_name = sprintf("calendar.%d-%02d-%02d_%02d:%02d:%02d.ics",
@@ -149,7 +156,8 @@ if ($opts{'t'}) {
 	open(STDOUT, ">", $output_file_name) or die "open of " . $output_file_name . " failed!";
 }
 
-foreach (split(':', $opts{'c'})) {
+push (@tree,$opts{'y'});
+foreach (split(':', $opts{'a'})) {
 	push (@tree,$_);
 	# $opts{'c'} is ProjectID:Category:branchId:branchId:branchId but of course in text instead of ID
 	# The job is to find the latest branchId ID then parse schedule
@@ -160,26 +168,26 @@ my $mech = WWW::Mechanize->new(agent => 'ADEics 0.2', cookie_jar => {});
 
 # login in
 $mech->get($opts{'u'}.'standard/index.jsp');
-debug_url($mech, '1', $opts{'d'});
+debug_url($mech, '010', $opts{'d'});
 die "Error 1 : failed to load welcome page. Check if base_url works." if (!$mech->success());
 
-if ($opts{'s'}) {
+if ($opts{'c'}) {
 	$mech->submit_form(fields => {username => $opts{'l'}, password => $opts{'p'}});
 } else {
 	$mech->submit_form(fields => {login => $opts{'l'}, password => $opts{'p'}});
 }
-debug_url($mech, '2', $opts{'d'});
+debug_url($mech, '020', $opts{'d'});
 die "Error 2 : Login failed." if (!$mech->success());
 
-if ($opts{'s'}) {
+if ($opts{'c'}) {
 	$mech->follow_link( n => 1 );
-	debug_url($mech, '2.1', $opts{'d'});
+	debug_url($mech, '021', $opts{'d'});
 	die "Error 2.1" if (!$mech->success());
 }
 
 # Getting projet list
 $mech->get($opts{'u'}.'standard/projects.jsp');
-debug_url($mech, '2.2', $opts{'d'});
+debug_url($mech, '022', $opts{'d'});
 die "Error 2.2 : Failed to load projets.jps. Check if ADE url ($opts{'u'}) works." if (!$mech->success());
 
 # Choosing projectId
@@ -192,78 +200,84 @@ while (($projid == -1) && (my $token = $p->get_tag("option"))) {
 		$projid = $token->[1]{value};
 	}
 }
-die "Error 3 : $tree[0] does not exist. Check argument to -c option." if ($projid == -1);
+die "Error 3 : $tree[0] does not exist. Check argument to -y option." if ($projid == -1);
 
 $mech->submit_form(fields => {projectId => $projid});
-debug_url($mech, '4', $opts{'d'});
+debug_url($mech, '040', $opts{'d'});
 die "Error 4 : Can't select $tree[0]." if (!$mech->success());
 
-# We need to load tree.jsp to find category name
-$mech->get($opts{'u'}.'standard/gui/tree.jsp');
-debug_url($mech, '5', $opts{'d'});
-die "Error 5 : Can't load standard/gui/tree.jsp." if (!$mech->success());
+if ($opts{'a'}) {
+	# Usage of -a, we need to find the numerical value of It
 
-# So, finding it
-$p = HTML::TokeParser->new(\$mech->content);
-$token = $p->get_tag("div");
+	# We need to load tree.jsp to find category name
+	$mech->get($opts{'u'}.'standard/gui/tree.jsp');
+	debug_url($mech, '050', $opts{'d'});
+	die "Error 5 : Can't load standard/gui/tree.jsp." if (!$mech->success());
 
-my $category;
-while ((!defined($category)) && (my $token = $p->get_tag("a"))) {
-      if($p->get_trimmed_text eq $tree[1]) {
-	      $category = $token->[1]{href};
-	}
-}
-$category =~ s/.*\('(.*?)'\)$/$1/;
-die "Error 6 : $tree[1] does not exist. Check argument to -c option." if (!defined($category));
-
-
-# We need load the category chosed on command line to find branchID
-$mech->get($opts{'u'}.'standard/gui/tree.jsp?category='.$category.'&expand=false&forceLoad=false&reload=false&scroll=0');
-debug_url($mech, '7', $opts{'d'});
-die "Error 7 : Can't load standard/gui/tree.jsp?category=$category ..." if (!$mech->success());
-
-
-# We loop until last branchID
-my $branchId;
-for (2..$#tree) {
-	undef $branchId;
-
-	# find branch
+	# So, find it
 	$p = HTML::TokeParser->new(\$mech->content);
 	$token = $p->get_tag("div");
 
-	while ((!defined($branchId)) && (my $token = $p->get_tag("a"))) {
-		if($p->get_trimmed_text eq $tree[$_]) {
-		      $branchId = $token->[1]{href};
+	my $category;
+	while ((!defined($category)) && (my $token = $p->get_tag("a"))) {
+		if($p->get_trimmed_text eq $tree[1]) {
+			$category = $token->[1]{href};
 		}
 	}
-	$branchId =~ s/.*\((\d+),\s+.*/$1/;
-	debug_url($mech, "8.$_", $opts{'d'});
-	die "Error 8.$_ : $tree[$_] does not exist" if (!defined($branchId));
+	$category =~ s/.*\('(.*?)'\)$/$1/;
+	die "Error 6 : $tree[1] does not exist. Check argument to -a option." if (!defined($category));
 
-	if ($_ == $#tree) {
-		$mech->get($opts{'u'}.'standard/gui/tree.jsp?selectId='.$branchId.'&reset=true&forceLoad=false&scroll=0');
-	} else {
-		$mech->get($opts{'u'}.'standard/gui/tree.jsp?branchId='.$branchId.'&expand=false&forceLoad=false&reload=false&scroll=0');
+	# We need to load the category chosed on command line to find branchID
+	$mech->get($opts{'u'}.'standard/gui/tree.jsp?category='.$category.'&expand=false&forceLoad=false&reload=false&scroll=0');
+	debug_url($mech, '070', $opts{'d'});
+	die "Error 7 : Can't load standard/gui/tree.jsp?category=$category ..." if (!$mech->success());
+
+	# We loop until last supplied branchID
+	my $branchId;
+	for (2..$#tree) {
+		undef $branchId;
+
+		# find branch
+		$p = HTML::TokeParser->new(\$mech->content);
+		$token = $p->get_tag("div");
+
+		while ((!defined($branchId)) && (my $token = $p->get_tag("a"))) {
+			if($p->get_trimmed_text eq $tree[$_]) {
+				$branchId = $token->[1]{href};
+			}
+		}
+		$branchId =~ s/.*\((\d+),\s+.*/$1/;
+		debug_url($mech, "08".$_, $opts{'d'});
+		die "Error 8.$_ : $tree[$_] does not exist" if (!defined($branchId));
+	
+		if ($_ == $#tree) {
+			$mech->get($opts{'u'}.'standard/gui/tree.jsp?selectId='.$branchId.'&reset=true&forceLoad=false&scroll=0');
+		} else {
+			$mech->get($opts{'u'}.'standard/gui/tree.jsp?branchId='.$branchId.'&expand=false&forceLoad=false&reload=false&scroll=0');
+		}
 	}
-}
 
-debug_url($mech, '9', $opts{'d'});
-die "Error 9 : $tree[$#tree] does not exist" if (!defined($branchId));
+	debug_url($mech, '090', $opts{'d'});
+	die "Error 9 : $tree[$#tree] does not exist" if (!defined($branchId));
+
+} elsif ($opts{'n'}) {
+	$mech->get($opts{'u'}.'custom/modules/plannings/direct_planning.jsp?resources='.$opts{'n'});
+	debug_url($mech, '091', $opts{'d'});
+}
 
 # We need to choose a week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?forceLoad=true');
-debug_url($mech, '10', $opts{'d'});
+debug_url($mech, '100', $opts{'d'});
 die "Error 10 : Can't load custom/modules/plannings/pianoWeeks.jsp?forceLoad=true." if (!$mech->success());
 
 # then we choose all week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all');
-debug_url($mech, '10bis', $opts{'d'});
+debug_url($mech, '101', $opts{'d'});
 die "Error 10bis : Can't load custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all." if (!$mech->success());
 
 # Get planning
 $mech->get($opts{'u'}.'custom/modules/plannings/info.jsp');
-debug_url($mech, '11', $opts{'d'});
+debug_url($mech, '110', $opts{'d'});
 die "Error 11 : Can't load custom/modules/plannings/info.jsp." if (!$mech->success());
 
 # Parse planning to get event
@@ -408,7 +422,7 @@ sub ics_output {
 		$ics_duration = "PT".sprintf('%02d', $ics_duration_hours)."H".sprintf('%02d', $ics_duration_minutes)."M0S";
 
 		my ($tssec,$tsmin,$tshour,$tsmday,$tsmon,$tsyear,$tswday,$tsyday,$tsisdst) = gmtime();
-                my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
+		my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
 
 		print "BEGIN:VEVENT\n";
 		print "DTSTART;TZID=Europe/Paris:$ics_start_date\n";
@@ -438,7 +452,6 @@ sub debug_url {
 	if ($d) {
 		my $file_name = "ade2ics-debug-".$file_number.".html";
 		open(FILE, ">$file_name") or die "Can't open file $file_name: $!";
-		print FILE $file_number;
 		print FILE "<!--".$mech->uri()."-->\n";
 		print FILE $mech->content."\n";
 		close(FILE);
@@ -449,6 +462,11 @@ sub debug_url {
 __END__
 
 History (doesn't follow commit revision)
+Revision 3.0 2009/10/05
+Changed debug $file_number value for files to be sorted
+Now use -y for Project name, -a for alphabetical path, -n to supply branchId.
+	Based on work from Matthieu Moy
+Also changed -c for cas, -s for school and -w for write
 
 Revision 2.9 2009/10/04
 Add TZID=Europe/Paris for each event as per Matthieu Moy (Ensimag) try.
