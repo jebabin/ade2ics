@@ -4,7 +4,7 @@
 # Extended by:
 #	Ronan Keryell, rk in enstb.org
 #	Matthieu Moy, Matthieu.Moy in grenoble-inp.fr
-#
+# 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -51,7 +51,7 @@ my $default_school = 'TelecomBretagne';
 # School configuration
 my %default_config;
 # For TelecomBretagne
-$default_config{'TelecomBretagne'}{'u'} = 'http://edt.enst-bretagne.fr/ade/'; # (http://edt.enst-bretagne.fr/ade/ will not work)
+$default_config{'TelecomBretagne'}{'u'} = 'http://edt.telecom-bretagne.eu/ade/';
 $default_config{'TelecomBretagne'}{'l'} = '';
 $default_config{'TelecomBretagne'}{'p'} = ''; # Should be commented if your ADE system don't need a password
 $default_config{'TelecomBretagne'}{'w'} = 0;
@@ -134,7 +134,8 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		$opts{'c'} = param('c') if (defined(param('c')));
 #		$opts{'d'} = param('d') if (defined(param('d')));
 	} else {
-		print "Usage: $0?c=Chemin[&e=school][&u=base_url][&l=login][&p=password][&t]\n";
+		print "Usage: $0?y=Project_Name&n=Numerical_Value[&s=school][&u=base_url][&l=login][&p=password][&w]\n";
+		print "       $0?y=Project_Name&a=Alphabetical_path[&s=school][&u=base_url][&l=login][&p=password][&w]\n";
 		exit 1;
 	}
 }
@@ -195,12 +196,43 @@ my $p = HTML::TokeParser->new(\$mech->content);
 my $token = $p->get_tag("select");
 
 my $projid = -1;
+my %availableproject;
 while (($projid == -1) && (my $token = $p->get_tag("option"))) {
-	if($p->get_trimmed_text eq $tree[0]) {
-		$projid = $token->[1]{value};
+	my $pname = $p->get_trimmed_text;
+      if($pname eq $tree[0]) {
+	      $projid = $token->[1]{value};
+	} else {
+		$availableproject{$pname} = 1;
 	}
 }
-die "Error 3 : $tree[0] does not exist. Check argument to -y option." if ($projid == -1);
+if ($projid == -1) {
+	my ($tssec,$tsmin,$tshour,$tsmday,$tsmon,$tsyear,$tswday,$tsyday,$tsisdst) = gmtime();
+	my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
+	my $edtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour+2, $tsmin, $tssec);
+
+	print "BEGIN:VCALENDAR\n";                                                                                                                                                                                                                                                                                                    
+	print "VERSION:2.0\n";                                                                                                                                                                                                                                                                                                        
+	print "PRODID:-//Jeb//edt.pl//EN\n";                                                                                                                                                                                                                                                                                          
+	print "BEGIN:VTIMEZONE\n";                                                                                                                                                                                                                                                                                                    
+	print "X-WR-CALNAME:ADE2ics\n";                                                                                                                                                                                                                                                                                               
+	print "TZID:\"GMT +0100 (Standard) / GMT +0200 (Daylight)\"\n";                                                                                                                                                                                                                                                              
+	print "END:VTIMEZONE\n";                                                                                                                                                                                                                                                                                                      
+	print "METHOD:PUBLISH\n";                                                                                                                                                                                                                                                                                                     
+	print "BEGIN:VEVENT\n";
+	print "DTSTART:$dtstamp\n";
+	print "DTEND:$edtstamp\n";
+	print "DTSTAMP:$dtstamp\n";
+	print "UID:edt-out\n";
+	print "SUMMARY:Project $tree[0] does not exist\n";
+	print "DESCRIPTION:";
+	print "The requested project $tree[0] does not exist. Existing project are :".'\n';
+	print "$_".'\n' foreach (sort keys %availableproject);
+	print "\n";
+	print "END:VEVENT\n";
+	print "END:VCALENDAR\n";
+
+	die "Error 3 : $tree[0] does not exist";
+}
 
 $mech->submit_form(fields => {projectId => $projid});
 debug_url($mech, '040', $opts{'d'});
@@ -441,7 +473,8 @@ sub ics_output {
 		print "Modules	: $module".'\n' if ($module !~ /^\s+$/);
 		print "Formations/UV : $formation_UV".'\n' if ($formation_UV !~ /^\s+$/);
 		print "Equipements : $equipment".'\n' if ($equipment !~ /^\s+$/);
-		print "Statuts	: $statuts\n" if ($statuts !~ /^\s+$/);
+		print "Statuts	: $statuts" if ($statuts !~ /^\s+$/);
+		print "\n";
 		print "LOCATION:$rooms\n";
 		print "URL;VALUE=URI:".$opts{'u'}."custom/modules/plannings/eventInfo.jsp?eventId=$id\n";
 		print "END:VEVENT\n";
@@ -464,6 +497,13 @@ sub debug_url {
 __END__
 
 History (doesn't follow commit revision)
+
+Revision 3.1 2010/04/24
+Use telecom-bretagne.eu instead of enst-bretagne.fr in the TelecomBretagne default configuration
+Now return a valid calendar event (using current time) when project doesn't exist. So CGI users now see a more useful message 
+Fix a bug preventing Location to be correctly set in some case
+Fix CGI Usage message.
+
 Revision 3.0 2009/10/05
 Changed debug $file_number value for files to be sorted
 Now use -y for Project name, -a for alphabetical path, -n to supply branchId.
