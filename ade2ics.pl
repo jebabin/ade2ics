@@ -4,6 +4,7 @@
 # Extended by:
 #	Ronan Keryell, rk in enstb.org
 #	Matthieu Moy, Matthieu.Moy in grenoble-inp.fr
+#	FranÁois Revol, Francois.Revol in imag.fr
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -66,6 +67,22 @@ $default_config{'Ensimag'}{'w'} = 0;
 $default_config{'Ensimag'}{'d'} = 0;
 $default_config{'Ensimag'}{'c'} = 0;
 
+# For UPMF
+$default_config{'UPMF'}{'u'} = 'http://ade52-upmf.grenet.fr/';
+$default_config{'UPMF'}{'l'} = '';
+$default_config{'UPMF'}{'p'} = ''; # Should be commented if your ADE system don't need a password
+$default_config{'UPMF'}{'w'} = 0;
+$default_config{'UPMF'}{'d'} = 0;
+$default_config{'UPMF'}{'c'} = 0;
+
+# For UJF
+$default_config{'UJF'}{'u'} = 'http://ade52-ujf.grenet.fr/';
+$default_config{'UJF'}{'l'} = '';
+$default_config{'UJF'}{'p'} = ''; # Should be commented if your ADE system don't need a password
+$default_config{'UJF'}{'w'} = 0;
+$default_config{'UJF'}{'d'} = 0;
+$default_config{'UJF'}{'c'} = 0;
+
 my %opts;
 my @tree;
 
@@ -86,14 +103,12 @@ if (!defined $ENV{REQUEST_METHOD}) {
 	$opts{'d'} = $opts{'d'} || $default_config{$opts{'s'}}{'d'};
 	$opts{'c'} = $opts{'c'} || $default_config{$opts{'s'}}{'c'};
 
-	if (!(defined($opts{'y'}) and (defined($opts{'a'}) xor defined($opts{'n'})))) {
-		print STDERR "Usage: $0 -y Projet_name -a Alphabetical_path [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
-		print STDERR "Usage: $0 -y Projet_name -n Numerical_value   [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
-#		print STDERR "Usage: $0 -y Projet_name -a Alphabetical_path -n Numerical_value [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
-		print STDERR " -y : the projet name\n";
+	if (!(defined($opts{'a'}) xor defined($opts{'n'})) ) {
+		print STDERR "Usage: $0 -a Alphabetical_path [-y Projet_name] [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
+		print STDERR "Usage: $0 -n Numerical_value   [-y Projet_name]  [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
 		print STDERR " -a : alphabetical path through the ressource, encoded in ISO-8859-1 (see examples)\n";
 		print STDERR " -n : numerical value of the ressource\n";
-#		print STDERR "\t You can use both -a and -n\n";
+		print STDERR " -y : the projet name if needed\n";
 		print STDERR " -s : school name. It loads a set of default value for -u -l -p -c -w- -d for your school. Default school is : $default_school. Available school are (case sensitive):\n";
 		print STDERR "\t- $_\n" foreach (keys %default_config);
 		print STDERR " -u : the ADE location to peek into\n";
@@ -109,7 +124,7 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717\n";
 		print STDERR " even more:\n";
 		print STDERR " $0 -c -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
-		print STDERR " $0 -w -c -l keryell -p some_password -y '2007-2008' -a 'Enseignants:H Ã  K:KERYELL Ronan'\n";
+		print STDERR " $0 -w -c -l keryell -p some_password -y '2007-2008' -a 'Enseignants:H à K:KERYELL Ronan'\n";
 		print STDERR " $0 -u http://ade52-inpg.grenet.fr/ade/ -l voirIMATEL -p somepassword -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
 		exit 1;
 	}
@@ -127,6 +142,7 @@ if (!defined $ENV{REQUEST_METHOD}) {
 
 		$opts{'a'} = param('a');
 		$opts{'n'} = param('n');
+		$opts{'y'} = param('y') if (defined(param('y')));
 		$opts{'u'} = param('u') if (defined(param('u')));
 		$opts{'l'} = param('l') if (defined(param('l')));
 		$opts{'p'} = param('p') if (defined(param('p')));
@@ -134,8 +150,8 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		$opts{'c'} = param('c') if (defined(param('c')));
 #		$opts{'d'} = param('d') if (defined(param('d')));
 	} else {
-		print "Usage: $0?y=Project_Name&n=Numerical_Value[&s=school][&u=base_url][&l=login][&p=password][&w]\n";
-		print "       $0?y=Project_Name&a=Alphabetical_path[&s=school][&u=base_url][&l=login][&p=password][&w]\n";
+		print "Usage: $0?n=Numerical_Value[&y=Project_Name][&s=school][&u=base_url][&l=login][&p=password][&w]\n";
+		print "       $0?a=Alphabetical_path[&y=Project_Name][&s=school][&u=base_url][&l=login][&p=password][&w]\n";
 		exit 1;
 	}
 }
@@ -199,13 +215,13 @@ my $projid = -1;
 my %availableproject;
 while (($projid == -1) && (my $token = $p->get_tag("option"))) {
 	my $pname = $p->get_trimmed_text;
-      if($pname eq $tree[0]) {
-	      $projid = $token->[1]{value};
-	} else {
-		$availableproject{$pname} = 1;
+	if($pname eq $tree[0]) {
+		$projid = $token->[1]{value};
 	}
+	$availableproject{$pname} = 1;
 }
-if ($projid == -1) {
+# ADE allow to select a project but no one has been selected
+if (($projid == -1) && (%availableproject)) {
 	my ($tssec,$tsmin,$tshour,$tsmday,$tsmon,$tsyear,$tswday,$tsyday,$tsisdst) = gmtime();
 	my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
 	my $edtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour+2, $tsmin, $tssec);
@@ -225,18 +241,22 @@ if ($projid == -1) {
 	print "UID:edt-out\n";
 	print "SUMMARY:Project $tree[0] does not exist\n";
 	print "DESCRIPTION:";
-	print "The requested project $tree[0] does not exist. Existing project are :".'\n';
+	print "The requested project '$tree[0]' does not exist. Existing projects are :".'\n';
 	print "$_".'\n' foreach (sort keys %availableproject);
 	print "\n";
 	print "END:VEVENT\n";
 	print "END:VCALENDAR\n";
 
 	die "Error 3 : $tree[0] does not exist";
+} elsif (%availableproject) {
+	$mech->submit_form(fields => {projectId => $projid});
+	debug_url($mech, '040', $opts{'d'});
+	die "Error 4 : Can't select $tree[0]." if (!$mech->success());
+} else {
+	warn "Assuming single project\n";
+	# TODO: Check project name printed in the top frame of standard/projects.jsp request
 }
 
-$mech->submit_form(fields => {projectId => $projid});
-debug_url($mech, '040', $opts{'d'});
-die "Error 4 : Can't select $tree[0]." if (!$mech->success());
 
 if ($opts{'a'}) {
 	# Usage of -a, we need to find the numerical value of It
@@ -289,28 +309,230 @@ if ($opts{'a'}) {
 		}
 	}
 
+	$opts{'n'} = $branchId;
 	debug_url($mech, '091', $opts{'d'});
 	die "Error 9.1 : $tree[$#tree] does not exist" if (!defined($branchId));
+	
+}
 
-} elsif ($opts{'n'}) {
+# We run this part even if option a has been supllied because if this URL is not load the 'force displayed fields' part of the script did not work - quite strange!
+if ($opts{'n'}) {
 	$mech->get($opts{'u'}.'custom/modules/plannings/direct_planning.jsp?resources='.$opts{'n'});
 	debug_url($mech, '092', $opts{'d'});
 	die "Error 9.2 : Can't load custom/modules/plannings/direct_planning.jsp?resources=".$opts{'n'} if (!$mech->success());
-
 }
 
 # We need to choose a week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?forceLoad=true');
 debug_url($mech, '100', $opts{'d'});
-die "Error 10 : Can't load custom/modules/plannings/pianoWeeks.jsp?forceLoad=true." if (!$mech->success());
+die "Error 10.0 : Can't load custom/modules/plannings/pianoWeeks.jsp?forceLoad=true." if (!$mech->success());
 
 # then we choose all week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all');
 debug_url($mech, '101', $opts{'d'});
-die "Error 10bis : Can't load custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all." if (!$mech->success());
+die "Error 10.1 : Can't load custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all." if (!$mech->success());
+
+# force displayed fields
+$mech->get($opts{'u'}.'custom/modules/plannings/appletparams.jsp');
+debug_url($mech, '102', $opts{'d'});
+die "Error 10.2 : failed to load config page." if (!$mech->success());
+# Activity / Activitªs
+$mech->field("showTabActivity", "true");	# Nom
+$mech->field("showTabWeek", "false");	# Semaine
+$mech->field("showTabDay", "false");		# Jour
+$mech->field("showTabStage", "false");	# Stage
+$mech->field("showTabDate", "true");		# Date
+$mech->field("showTabHour", "true");		# Heure
+$mech->field("aC", "false");				# Code
+$mech->field("aTy", "false");			# Type
+$mech->field("aUrl", "false");			# Url
+$mech->field("showTabDuration", "true");	# Durªe
+$mech->field("aSize", "false");			# Capacitª
+$mech->field("aMx", "false");			# Nombre de si¿ges
+$mech->field("aSl", "false");			# Si¿ges disponibles
+$mech->field("aCx", "false");			# Code X
+$mech->field("aCy", "false");			# Code Y
+$mech->field("aCz", "false");			# Code Z
+$mech->field("aTz", "false");			# Fuseau horaire
+$mech->field("aN", "false");				# Notes
+$mech->field("aNe", "false");			# Note de sªance
+
+# Trainees / Etudiants
+$mech->field("showTabTrainees", "true");	# Nom
+$mech->field("sC", "false");
+$mech->field("sTy", "false");
+$mech->field("sUrl", "false");
+$mech->field("sE", "false");
+$mech->field("sM", "false");
+$mech->field("sJ", "false");
+$mech->field("sA1", "false");
+$mech->field("sA2", "false");
+$mech->field("sZp", "false");
+$mech->field("sCi", "false");
+$mech->field("sSt", "false");
+$mech->field("sCt", "false");
+$mech->field("sT", "false");
+$mech->field("sF", "false");
+$mech->field("sCx", "false");
+$mech->field("sCy", "false");
+$mech->field("sCz", "false");
+$mech->field("sTz", "false");
+
+# Instructors / Enseignants
+$mech->field("showTabInstructors", "true");	# Nom
+$mech->field("iC", "false");
+$mech->field("iTy", "false");
+$mech->field("iUrl", "false");
+$mech->field("iE", "false");
+$mech->field("iM", "false");
+$mech->field("iJ", "false");
+$mech->field("iA1", "false");
+$mech->field("iA2", "false");
+$mech->field("iZp", "false");
+$mech->field("iCi", "false");
+$mech->field("iSt", "false");
+$mech->field("iCt", "false");
+$mech->field("iT", "false");
+$mech->field("iF", "false");
+$mech->field("iCx", "false");
+$mech->field("iCy", "false");
+$mech->field("iCz", "false");
+$mech->field("iTz", "false");
+
+# Rooms / Salles
+$mech->field("showTabRooms", "true");	# Nom
+$mech->field("roC", "false");
+$mech->field("roTy", "false");
+$mech->field("roUrl", "false");
+$mech->field("roE", "false");
+$mech->field("roM", "false");
+$mech->field("roJ", "false");
+$mech->field("roA1", "false");
+$mech->field("roA2", "false");
+$mech->field("roZp", "false");
+$mech->field("roCi", "false");
+$mech->field("roSt", "false");
+$mech->field("roCt", "false");
+$mech->field("roT", "false");
+$mech->field("roF", "false");
+$mech->field("roCx", "false");
+$mech->field("roCy", "false");
+$mech->field("roCz", "false");
+$mech->field("roTz", "false");
+
+# Resources / Equipements
+$mech->field("showTabResources", "true");
+$mech->field("reC", "false");
+$mech->field("reTy", "false");
+$mech->field("reUrl", "false");
+$mech->field("reE", "false");
+$mech->field("reM", "false");
+$mech->field("reJ", "false");
+$mech->field("reA1", "false");
+$mech->field("reA2", "false");
+$mech->field("reZp", "false");
+$mech->field("reCi", "false");
+$mech->field("reSt", "false");
+$mech->field("reCt", "false");
+$mech->field("reT", "false");
+$mech->field("reF", "false");
+$mech->field("reCx", "false");
+$mech->field("reCy", "false");
+$mech->field("reCz", "false");
+$mech->field("reTz", "false");
+
+# Category5 / used as Status at Telecom Bretagne 
+$mech->field("showTabCategory5", "true");
+$mech->field("c5C", "false");
+$mech->field("c5Ty", "false");
+$mech->field("c5Url", "false");
+$mech->field("c5E", "false");
+$mech->field("c5M", "false");
+$mech->field("c5J", "false");
+$mech->field("c5A1", "false");
+$mech->field("c5A2", "false");
+$mech->field("c5Zp", "false");
+$mech->field("c5Ci", "false");
+$mech->field("c5St", "false");
+$mech->field("c5Ct", "false");
+$mech->field("c5T", "false");
+$mech->field("c5F", "false");
+$mech->field("c5Cx", "false");
+$mech->field("c5Cy", "false");
+$mech->field("c5Cz", "false");
+$mech->field("c5Tz", "false");
+
+# Category6 / used as Groupes at Telecom Bretagne
+$mech->field("showTabCategory6", "true");
+$mech->field("c6C", "false");
+$mech->field("c6Ty", "false");
+$mech->field("c6Url", "false");
+$mech->field("c6E", "false");
+$mech->field("c6M", "false");
+$mech->field("c6J", "false");
+$mech->field("c6A1", "false");
+$mech->field("c6A2", "false");
+$mech->field("c6Zp", "false");
+$mech->field("c6Ci", "false");
+$mech->field("c6St", "false");
+$mech->field("c6Ct", "false");
+$mech->field("c6T", "false");
+$mech->field("c6F", "false");
+$mech->field("c6Cx", "false");
+$mech->field("c6Cy", "false");
+$mech->field("c6Cz", "false");
+$mech->field("c6Tz", "false");
+
+# Category7 / used as Modules at Telecom Bretagne
+$mech->field("showTabCategory7", "true");
+$mech->field("c7C", "false");
+$mech->field("c7Ty", "false");
+$mech->field("c7Url", "false");
+$mech->field("c7E", "false");
+$mech->field("c7M", "false");
+$mech->field("c7J", "false");
+$mech->field("c7A1", "false");
+$mech->field("c7A2", "false");
+$mech->field("c7Zp", "false");
+$mech->field("c7Ci", "false");
+$mech->field("c7St", "false");
+$mech->field("c7Ct", "false");
+$mech->field("c7T", "false");
+$mech->field("c7F", "false");
+$mech->field("c7Cx", "false");
+$mech->field("c7Cy", "false");
+$mech->field("c7Cz", "false");
+$mech->field("c7Tz", "false");
+
+# Category8 / used as Formation/UV at Telecom Bretagne
+$mech->field("showTabCategory8", "true");
+$mech->field("c8C", "false");
+$mech->field("c8Ty", "false");
+$mech->field("c8Url", "false");
+$mech->field("c8E", "false");
+$mech->field("c8M", "false");
+$mech->field("c8J", "false");
+$mech->field("c8A1", "false");
+$mech->field("c8A2", "false");
+$mech->field("c8Zp", "false");
+$mech->field("c8Ci", "false");
+$mech->field("c8St", "false");
+$mech->field("c8Ct", "false");
+$mech->field("c8T", "false");
+$mech->field("c8F", "false");
+$mech->field("c8Cx", "false");
+$mech->field("c8Cy", "false");
+$mech->field("c8Cz", "false");
+$mech->field("c8Tz", "false");
+
+$mech->submit_form();
+debug_url($mech, '103', $opts{'d'});
+die "Error 10.3 : failed to submit config page." if (!$mech->success());
 
 # Get planning
-$mech->get($opts{'u'}.'custom/modules/plannings/info.jsp');
+$mech->get($opts{'u'}.'custom/modules/plannings/info.jsp?order=slot&light=true');
+	# light remove some heading
+	# order=slot sort by date (not needed for the script to work)
 debug_url($mech, '110', $opts{'d'});
 die "Error 11 : Can't load custom/modules/plannings/info.jsp." if (!$mech->success());
 
@@ -344,8 +566,6 @@ sub ics_output {
 		my $date;
 		my $id;
 		my $course;
-		my $week;
-		my $day;
 		my $hour;
 		my $duration;
 		my $trainers;
@@ -358,41 +578,57 @@ sub ics_output {
 		my $formation_UV;
 
 		#######################################
-		# This part is not generic enough to work well with all installation
+		# This part is not generic enough to work well with all installation but has been largy improved in version 3.2
 		#######################################
 
+		# showTabDate
 		$token = $p->get_tag("span");
 		$date = $p->get_trimmed_text; # 12/05/2006
 
+		# showTabActivity
 		$token = $p->get_tag("a");
 		$id = $token->[1]{href};
 		$id =~ /\((\d+)\)/;
 		$id = $1;
-
 		$course = $p->get_trimmed_text; # INF 423 Cours 1 et 2
-		$token = $p->get_tag("td");
-		$week = $p->get_trimmed_text; # 10 sept. 2007 | S40-09
-		$token = $p->get_tag("td");
-		$day = $p->get_trimmed_text; # Mardi
+
+		# showTabHour
 		$token = $p->get_tag("td");
 		$hour = $p->get_trimmed_text; # 13h30 | 15:30
+
+		# showTabDuration
 		$token = $p->get_tag("td");
 		$duration = $p->get_trimmed_text; # 2h50min | 2h | 50min
 
+		# showTabTrainees
 		$token = $p->get_tag("td");
 		$trainees = $p->get_text('td'); #
+
+		# showTabInstructors
 		$token = $p->get_tag("td");
 		$trainers = $p->get_text('td'); # LEROUX Camille
+
+		# showTabRooms
 		$token = $p->get_tag("td");
 		$rooms = $p->get_text('td'); # B03-132A
+
+		# showTabResources
 		$token = $p->get_tag("td");
 		$equipment = $p->get_text('td');
+
+		# showTabCategory5
 		$token = $p->get_tag("td");
-		$statuts = $p->get_text('td'); # Validé
+		$statuts = $p->get_text('td'); # ValidÈ
+
+		# showTabCategory6
 		$token = $p->get_tag("td");
 		$groupes = $p->get_text('td'); # Groupe UV2 MAJ INF 423
+
+		# showTabCategory7
 		$token = $p->get_tag("td");
-		$module = $p->get_text('td'); # FIP ELP103 Electronique num?rique : Logique combinatoire
+		$module = $p->get_text('td'); # FIP ELP103 Electronique numerique : Logique combinatoire
+
+		# showTabCategory8
 		$token = $p->get_tag("td");
 		$formation_UV = $p->get_trimmed_text; # Enseignements INF S3 UV2 MAJ INF Automne Majeure INF UV2
 		
@@ -401,8 +637,6 @@ sub ics_output {
 		print "Date:		$date\n";
 		print "Id:		$id\n";
 		print "course:		$course\n";
-		print "week:		$week\n";
-		print "day:		$day\n";
 		print "hour:		$hour\n";
 		print "duration:	$duration\n";
 		print "trainers:	$trainers\n";
@@ -497,6 +731,12 @@ sub debug_url {
 __END__
 
 History (doesn't follow commit revision)
+
+Revision 3.2 2010/05/01
+Add support for UPMF and UJF based on the work of François Revol
+	The script now choose what has to be displayed in the planning table, this improve its parsing.
+	Project name is now no longer mandatory
+Fix a bug in CGI version, y option was ignored
 
 Revision 3.1 2010/04/24
 Use telecom-bretagne.eu instead of enst-bretagne.fr in the TelecomBretagne default configuration
