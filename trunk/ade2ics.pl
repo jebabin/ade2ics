@@ -161,7 +161,7 @@ if (!defined $ENV{REQUEST_METHOD}) {
 
 		$opts{'a'} = param('a');
 		$opts{'n'} = param('n');
-		$opts{'y'} = param('y');
+		$opts{'y'} = param('y') if (defined(param('y')));
 		$opts{'u'} = param('u') if (defined(param('u')));
 		$opts{'l'} = param('l') if (defined(param('l')));
 		$opts{'p'} = param('p') if (defined(param('p')));
