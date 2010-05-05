@@ -91,7 +91,7 @@ $default_config{'MA'}{'w'} = 0;
 $default_config{'MA'}{'c'} = 0;
 $default_config{'MA'}{'d'} = undef;
 
-# For Unviv Tour
+# For Unviv Tours
 $default_config{'UT'}{'u'} = 'http://emploidutemps.univ-tours.fr/ade/';
 $default_config{'UT'}{'l'} = '';
 $default_config{'UT'}{'p'} = ''; # Should be commented if your ADE system don't need a password
@@ -755,9 +755,9 @@ History (doesn't follow commit revision)
 
 Revision 3.3 2010/05/06
 Change option -d by option -v (for verbose/debug)
-Add option -d to supply a domain name for CAS autentication
+Add option -d to supply a domain name for CAS authentication
 Improved usage message
-Add default configuration for Université de Tour and Mines d'Albi
+Add default configuration for Université de Tours and Mines d'Albi
 
 Revision 3.2 2010/05/01
 Add support for UPMF and UJF based on the work of FranÁois Revol
