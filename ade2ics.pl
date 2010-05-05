@@ -4,7 +4,7 @@
 # Extended by:
 #	Ronan Keryell, rk in enstb.org
 #	Matthieu Moy, Matthieu.Moy in grenoble-inp.fr
-#	FranÁois Revol, Francois.Revol in imag.fr
+#	François Revol, Francois.Revol in imag.fr
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,32 +56,48 @@ $default_config{'TelecomBretagne'}{'u'} = 'http://edt.telecom-bretagne.eu/ade/';
 $default_config{'TelecomBretagne'}{'l'} = '';
 $default_config{'TelecomBretagne'}{'p'} = ''; # Should be commented if your ADE system don't need a password
 $default_config{'TelecomBretagne'}{'w'} = 0;
-$default_config{'TelecomBretagne'}{'d'} = 0;
 $default_config{'TelecomBretagne'}{'c'} = 1;
+$default_config{'TelecomBretagne'}{'d'} = undef;
 
 # For Ensimag
 $default_config{'Ensimag'}{'u'} = 'http://ade52-inpg.grenet.fr/ade/';
 $default_config{'Ensimag'}{'l'} = 'voirIMATEL';
 $default_config{'Ensimag'}{'p'} = ''; # Should be commented if your ADE system don't need a password
 $default_config{'Ensimag'}{'w'} = 0;
-$default_config{'Ensimag'}{'d'} = 0;
 $default_config{'Ensimag'}{'c'} = 0;
+$default_config{'Ensimag'}{'d'} = undef;
 
 # For UPMF
 $default_config{'UPMF'}{'u'} = 'http://ade52-upmf.grenet.fr/';
 $default_config{'UPMF'}{'l'} = '';
 $default_config{'UPMF'}{'p'} = ''; # Should be commented if your ADE system don't need a password
 $default_config{'UPMF'}{'w'} = 0;
-$default_config{'UPMF'}{'d'} = 0;
 $default_config{'UPMF'}{'c'} = 0;
+$default_config{'UPMF'}{'d'} = undef;
 
 # For UJF
 $default_config{'UJF'}{'u'} = 'http://ade52-ujf.grenet.fr/';
 $default_config{'UJF'}{'l'} = '';
 $default_config{'UJF'}{'p'} = ''; # Should be commented if your ADE system don't need a password
 $default_config{'UJF'}{'w'} = 0;
-$default_config{'UJF'}{'d'} = 0;
 $default_config{'UJF'}{'c'} = 0;
+$default_config{'UJF'}{'d'} = undef;
+
+# For Mines Albi
+$default_config{'MA'}{'u'} = 'http://ade.mines-albi.fr:8080/ade/';
+$default_config{'MA'}{'l'} = '';
+$default_config{'MA'}{'p'} = ''; # Should be commented if your ADE system don't need a password
+$default_config{'MA'}{'w'} = 0;
+$default_config{'MA'}{'c'} = 0;
+$default_config{'MA'}{'d'} = undef;
+
+# For Unviv Tour
+$default_config{'UT'}{'u'} = 'http://emploidutemps.univ-tours.fr/ade/';
+$default_config{'UT'}{'l'} = '';
+$default_config{'UT'}{'p'} = ''; # Should be commented if your ADE system don't need a password
+$default_config{'UT'}{'w'} = 0;
+$default_config{'UT'}{'c'} = 1;
+$default_config{'UT'}{'d'} = 'univ-tours.fr'; # univ-tours.fr or etu.univ-tours.fr
 
 my %opts;
 my @tree;
@@ -94,33 +110,35 @@ $opts{'s'} = $default_school;
 
 if (!defined $ENV{REQUEST_METHOD}) {
 
-	GetOptions(\%opts, 'y=s', 'n=s', 'a=s', 'u=s', 'l=s', 's=s', 'p:s', 'w!', 'd!', 'c!');
+	GetOptions(\%opts, 'y=s', 'n=s', 'a=s', 'u=s', 'l=s', 's=s', 'p:s', 'w!', 'v!', 'd=s', 'c!');
 
 	$opts{'u'} = $opts{'u'} || $default_config{$opts{'s'}}{'u'};
 	$opts{'l'} = $opts{'l'} || $default_config{$opts{'s'}}{'l'};
 	$opts{'p'} = $opts{'p'} || $default_config{$opts{'s'}}{'p'};
 	$opts{'w'} = $opts{'w'} || $default_config{$opts{'s'}}{'w'};
+	$opts{'v'} = $opts{'v'} || $default_config{$opts{'s'}}{'v'};
 	$opts{'d'} = $opts{'d'} || $default_config{$opts{'s'}}{'d'};
 	$opts{'c'} = $opts{'c'} || $default_config{$opts{'s'}}{'c'};
 
 	if (!(defined($opts{'a'}) xor defined($opts{'n'})) ) {
-		print STDERR "Usage: $0 -a Alphabetical_path [-y Projet_name] [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
-		print STDERR "Usage: $0 -n Numerical_value   [-y Projet_name]  [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c] [-w] [-d]\n";
+		print STDERR "Usage: $0 -a Alphabetical_path [-y Projet_name] [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c [-d domain]] [-w] [-v]\n";
+		print STDERR "Usage: $0 -n Numerical_value   [-y Projet_name] [-s school_name] [-l login] [-p [password]] [-u ade_url] [-c [-d domain]] [-w] [-v]\n";
 		print STDERR " -a : alphabetical path through the ressource, encoded in ISO-8859-1 (see examples)\n";
 		print STDERR " -n : numerical value of the ressource\n";
 		print STDERR " -y : the projet name if needed\n";
-		print STDERR " -s : school name. It loads a set of default value for -u -l -p -c -w- -d for your school. Default school is : $default_school. Available school are (case sensitive):\n";
+		print STDERR " -s : school name. It loads a set of default value for -u -l -p -w -c -d for your school. Default school is : $default_school. Available school are (case sensitive):\n";
 		print STDERR "\t- $_\n" foreach (keys %default_config);
 		print STDERR " -u : the ADE location to peek into\n";
 		print STDERR " -l : login name for authentication purpose\n";
 		print STDERR " -p : password to use for authentication purpose\n";
 		print STDERR "\t if you just use -p without password, you will be prompted for it. recommanded for security !\n";
 		print STDERR " -w : write the schedule in time-stamped \"calendar.\" file to track modifications to your calendar.\n";
-		print STDERR " -d : enable debug output\n";
 		print STDERR " -c : enable CAS Authentification, as used at Telecom Bretagne\n";
+		print STDERR " -d : set domain name to use for CAS authentification\n";
+		print STDERR " -v : enable verbose/debug output (will write file on disk)\n";
 		print STDERR "\nSome examples:\n";
 		print STDERR " $0 -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
-		print STDERR " $0 -e Ensimag -p somepassword -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
+		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
 		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717\n";
 		print STDERR " even more:\n";
 		print STDERR " $0 -c -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
@@ -137,21 +155,23 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		$opts{'l'} = $default_config{$opts{'s'}}{'l'};
 		$opts{'p'} = $default_config{$opts{'s'}}{'p'};
 		$opts{'w'} = $default_config{$opts{'s'}}{'w'};
+		$opts{'v'} = $default_config{$opts{'s'}}{'v'};
 		$opts{'d'} = $default_config{$opts{'s'}}{'d'};
 		$opts{'c'} = $default_config{$opts{'s'}}{'c'};
 
 		$opts{'a'} = param('a');
 		$opts{'n'} = param('n');
-		$opts{'y'} = param('y') if (defined(param('y')));
+		$opts{'y'} = param('y');
 		$opts{'u'} = param('u') if (defined(param('u')));
 		$opts{'l'} = param('l') if (defined(param('l')));
 		$opts{'p'} = param('p') if (defined(param('p')));
 		$opts{'w'} = param('w') if (defined(param('w')));
 		$opts{'c'} = param('c') if (defined(param('c')));
-#		$opts{'d'} = param('d') if (defined(param('d')));
+		$opts{'d'} = param('d') if (defined(param('d')));
+#		$opts{'v'} = param('v') if (defined(param('v')));
 	} else {
-		print "Usage: $0?n=Numerical_Value[&y=Project_Name][&s=school][&u=base_url][&l=login][&p=password][&w]\n";
-		print "       $0?a=Alphabetical_path[&y=Project_Name][&s=school][&u=base_url][&l=login][&p=password][&w]\n";
+		print "Usage: $0?n=Numerical_Value[&y=Project_Name][&s=school][&u=base_url][&l=login][&p=password][&w][&c][&d=domain]\n";
+		print "       $0?a=Alphabetical_path[&y=Project_Name][&s=school][&u=base_url][&l=login][&p=password][&w][&c][&d=domain]\n";
 		exit 1;
 	}
 }
@@ -185,26 +205,26 @@ my $mech = WWW::Mechanize->new(agent => 'ADEics 0.2', cookie_jar => {});
 
 # login in
 $mech->get($opts{'u'}.'standard/index.jsp');
-debug_url($mech, '010', $opts{'d'});
+debug_url($mech, '010', $opts{'v'});
 die "Error 1 : failed to load welcome page. Check if base_url works." if (!$mech->success());
 
 if ($opts{'c'}) {
-	$mech->submit_form(fields => {username => $opts{'l'}, password => $opts{'p'}});
+	$mech->submit_form(fields => {username => $opts{'l'}, password => $opts{'p'}, domain => $opts{'d'}});
 } else {
 	$mech->submit_form(fields => {login => $opts{'l'}, password => $opts{'p'}});
 }
-debug_url($mech, '020', $opts{'d'});
+debug_url($mech, '020', $opts{'v'});
 die "Error 2 : Login failed." if (!$mech->success());
 
 if ($opts{'c'}) {
 	$mech->follow_link( n => 1 );
-	debug_url($mech, '021', $opts{'d'});
+	debug_url($mech, '021', $opts{'v'});
 	die "Error 2.1" if (!$mech->success());
 }
 
 # Getting projet list
 $mech->get($opts{'u'}.'standard/projects.jsp');
-debug_url($mech, '022', $opts{'d'});
+debug_url($mech, '022', $opts{'v'});
 die "Error 2.2 : Failed to load projets.jps. Check if ADE url ($opts{'u'}) works." if (!$mech->success());
 
 # Choosing projectId
@@ -220,6 +240,7 @@ while (($projid == -1) && (my $token = $p->get_tag("option"))) {
 	}
 	$availableproject{$pname} = 1;
 }
+	
 # ADE allow to select a project but no one has been selected
 if (($projid == -1) && (%availableproject)) {
 	my ($tssec,$tsmin,$tshour,$tsmday,$tsmon,$tsyear,$tswday,$tsyday,$tsisdst) = gmtime();
@@ -250,7 +271,7 @@ if (($projid == -1) && (%availableproject)) {
 	die "Error 3 : $tree[0] does not exist";
 } elsif (%availableproject) {
 	$mech->submit_form(fields => {projectId => $projid});
-	debug_url($mech, '040', $opts{'d'});
+	debug_url($mech, '040', $opts{'v'});
 	die "Error 4 : Can't select $tree[0]." if (!$mech->success());
 } else {
 	warn "Assuming single project\n";
@@ -263,7 +284,7 @@ if ($opts{'a'}) {
 
 	# We need to load tree.jsp to find category name
 	$mech->get($opts{'u'}.'standard/gui/tree.jsp');
-	debug_url($mech, '050', $opts{'d'});
+	debug_url($mech, '050', $opts{'v'});
 	die "Error 5 : Can't load standard/gui/tree.jsp." if (!$mech->success());
 
 	# So, find it
@@ -281,7 +302,7 @@ if ($opts{'a'}) {
 
 	# We need to load the category chosed on command line to find branchID
 	$mech->get($opts{'u'}.'standard/gui/tree.jsp?category='.$category.'&expand=false&forceLoad=false&reload=false&scroll=0');
-	debug_url($mech, '070', $opts{'d'});
+	debug_url($mech, '070', $opts{'v'});
 	die "Error 7 : Can't load standard/gui/tree.jsp?category=$category ..." if (!$mech->success());
 
 	# We loop until last supplied branchID
@@ -299,7 +320,7 @@ if ($opts{'a'}) {
 			}
 		}
 		$branchId =~ s/.*\((\d+),\s+.*/$1/;
-		debug_url($mech, "08".$_, $opts{'d'});
+		debug_url($mech, "08".$_, $opts{'v'});
 		die "Error 8.$_ : $tree[$_] does not exist" if (!defined($branchId));
 	
 		if ($_ == $#tree) {
@@ -310,7 +331,7 @@ if ($opts{'a'}) {
 	}
 
 	$opts{'n'} = $branchId;
-	debug_url($mech, '091', $opts{'d'});
+	debug_url($mech, '091', $opts{'v'});
 	die "Error 9.1 : $tree[$#tree] does not exist" if (!defined($branchId));
 	
 }
@@ -318,25 +339,25 @@ if ($opts{'a'}) {
 # We run this part even if option a has been supllied because if this URL is not load the 'force displayed fields' part of the script did not work - quite strange!
 if ($opts{'n'}) {
 	$mech->get($opts{'u'}.'custom/modules/plannings/direct_planning.jsp?resources='.$opts{'n'});
-	debug_url($mech, '092', $opts{'d'});
+	debug_url($mech, '092', $opts{'v'});
 	die "Error 9.2 : Can't load custom/modules/plannings/direct_planning.jsp?resources=".$opts{'n'} if (!$mech->success());
 }
 
 # We need to choose a week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?forceLoad=true');
-debug_url($mech, '100', $opts{'d'});
+debug_url($mech, '100', $opts{'v'});
 die "Error 10.0 : Can't load custom/modules/plannings/pianoWeeks.jsp?forceLoad=true." if (!$mech->success());
 
 # then we choose all week
 $mech->get($opts{'u'}.'custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all');
-debug_url($mech, '101', $opts{'d'});
+debug_url($mech, '101', $opts{'v'});
 die "Error 10.1 : Can't load custom/modules/plannings/pianoWeeks.jsp?searchWeeks=all." if (!$mech->success());
 
 # force displayed fields
 $mech->get($opts{'u'}.'custom/modules/plannings/appletparams.jsp');
-debug_url($mech, '102', $opts{'d'});
+debug_url($mech, '102', $opts{'v'});
 die "Error 10.2 : failed to load config page." if (!$mech->success());
-# Activity / Activitªs
+# Activity / Activités
 $mech->field("showTabActivity", "true");	# Nom
 $mech->field("showTabWeek", "false");	# Semaine
 $mech->field("showTabDay", "false");		# Jour
@@ -346,16 +367,16 @@ $mech->field("showTabHour", "true");		# Heure
 $mech->field("aC", "false");				# Code
 $mech->field("aTy", "false");			# Type
 $mech->field("aUrl", "false");			# Url
-$mech->field("showTabDuration", "true");	# Durªe
-$mech->field("aSize", "false");			# Capacitª
-$mech->field("aMx", "false");			# Nombre de si¿ges
-$mech->field("aSl", "false");			# Si¿ges disponibles
+$mech->field("showTabDuration", "true");	# Durée
+$mech->field("aSize", "false");			# Capacité
+$mech->field("aMx", "false");			# Nombre de siøges
+$mech->field("aSl", "false");			# Siøges disponibles
 $mech->field("aCx", "false");			# Code X
 $mech->field("aCy", "false");			# Code Y
 $mech->field("aCz", "false");			# Code Z
 $mech->field("aTz", "false");			# Fuseau horaire
 $mech->field("aN", "false");				# Notes
-$mech->field("aNe", "false");			# Note de sªance
+$mech->field("aNe", "false");			# Note de séance
 
 # Trainees / Etudiants
 $mech->field("showTabTrainees", "true");	# Nom
@@ -526,14 +547,14 @@ $mech->field("c8Cz", "false");
 $mech->field("c8Tz", "false");
 
 $mech->submit_form();
-debug_url($mech, '103', $opts{'d'});
+debug_url($mech, '103', $opts{'v'});
 die "Error 10.3 : failed to submit config page." if (!$mech->success());
 
 # Get planning
 $mech->get($opts{'u'}.'custom/modules/plannings/info.jsp?order=slot&light=true');
 	# light remove some heading
 	# order=slot sort by date (not needed for the script to work)
-debug_url($mech, '110', $opts{'d'});
+debug_url($mech, '110', $opts{'v'});
 die "Error 11 : Can't load custom/modules/plannings/info.jsp." if (!$mech->success());
 
 # Parse planning to get event
@@ -618,7 +639,7 @@ sub ics_output {
 
 		# showTabCategory5
 		$token = $p->get_tag("td");
-		$statuts = $p->get_text('td'); # ValidÈ
+		$statuts = $p->get_text('td'); # Validé
 
 		# showTabCategory6
 		$token = $p->get_tag("td");
@@ -732,8 +753,14 @@ __END__
 
 History (doesn't follow commit revision)
 
+Revision 3.3 2010/05/06
+Change option -d by option -v (for verbose/debug)
+Add option -d to supply a domain name for CAS autentication
+Improved usage message
+Add default configuration for Université de Tour and Mines d'Albi
+
 Revision 3.2 2010/05/01
-Add support for UPMF and UJF based on the work of François Revol
+Add support for UPMF and UJF based on the work of FranÁois Revol
 	The script now choose what has to be displayed in the planning table, this improve its parsing.
 	Project name is now no longer mandatory
 Fix a bug in CGI version, y option was ignored
