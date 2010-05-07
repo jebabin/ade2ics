@@ -21,9 +21,10 @@
 #
 # TODO
 # - Base config should be in an external file.
+# - Support multiple value for -a and -n option to load more than 1 BranchID at once
 # - TZID should not be statically set.
-# - Add possibility to stop the script before starting to log on the website if option c match some string
-#	(would be usefull for the cgi version where some users still try to load older project no longer used
+# - Add possibility to stop the script before starting to log on the website if option y or c match some string
+#	(would be usefull for the cgi version where some users still try to load older project no longer existing
 #
 # For history see the end of the script
 
@@ -43,7 +44,7 @@ use CGI qw(param header);
 # Default school
 
 # You may have to change this with your school name
-# Script comes with configuration for TelecomBretagne and Ensimag (case sensitive)
+# Script comes with configuration for TelecomBretagne, Ensimag, UPMF, UJF, UT, MA (case sensitive)
 # You may need to create a new configuration for you school bellow
 
 my $default_school = 'TelecomBretagne';
@@ -196,7 +197,7 @@ if ($opts{'w'}) {
 push (@tree,$opts{'y'});
 foreach (split(':', $opts{'a'})) {
 	push (@tree,$_);
-	# $opts{'c'} is ProjectID:Category:branchId:branchId:branchId but of course in text instead of ID
+	# $opts{'a'} is ProjectID:Category:branchId:branchId:branchId but of course in text instead of ID
 	# The job is to find the latest branchId ID then parse schedule
 }
 
@@ -243,31 +244,7 @@ while (($projid == -1) && (my $token = $p->get_tag("option"))) {
 	
 # ADE allow to select a project but no one has been selected
 if (($projid == -1) && (%availableproject)) {
-	my ($tssec,$tsmin,$tshour,$tsmday,$tsmon,$tsyear,$tswday,$tsyday,$tsisdst) = gmtime();
-	my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
-	my $edtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour+2, $tsmin, $tssec);
-
-	print "BEGIN:VCALENDAR\n";                                                                                                                                                                                                                                                                                                    
-	print "VERSION:2.0\n";                                                                                                                                                                                                                                                                                                        
-	print "PRODID:-//Jeb//edt.pl//EN\n";                                                                                                                                                                                                                                                                                          
-	print "BEGIN:VTIMEZONE\n";                                                                                                                                                                                                                                                                                                    
-	print "X-WR-CALNAME:ADE2ics\n";                                                                                                                                                                                                                                                                                               
-	print "TZID:\"GMT +0100 (Standard) / GMT +0200 (Daylight)\"\n";                                                                                                                                                                                                                                                              
-	print "END:VTIMEZONE\n";                                                                                                                                                                                                                                                                                                      
-	print "METHOD:PUBLISH\n";                                                                                                                                                                                                                                                                                                     
-	print "BEGIN:VEVENT\n";
-	print "DTSTART:$dtstamp\n";
-	print "DTEND:$edtstamp\n";
-	print "DTSTAMP:$dtstamp\n";
-	print "UID:edt-out\n";
-	print "SUMMARY:Project $tree[0] does not exist\n";
-	print "DESCRIPTION:";
-	print "The requested project '$tree[0]' does not exist. Existing projects are :".'\n';
-	print "$_".'\n' foreach (sort keys %availableproject);
-	print "\n";
-	print "END:VEVENT\n";
-	print "END:VCALENDAR\n";
-
+	reporterror("Project $tree[0] does not exist", "The requested project '$tree[0]' does not exist. Existing projects are :",%availableproject);
 	die "Error 3 : $tree[0] does not exist";
 } elsif (%availableproject) {
 	$mech->submit_form(fields => {projectId => $projid});
@@ -280,7 +257,7 @@ if (($projid == -1) && (%availableproject)) {
 
 
 if ($opts{'a'}) {
-	# Usage of -a, we need to find the numerical value of It
+	# Usage of -a, we need to find its numerical value
 
 	# We need to load tree.jsp to find category name
 	$mech->get($opts{'u'}.'standard/gui/tree.jsp');
@@ -289,45 +266,70 @@ if ($opts{'a'}) {
 
 	# So, find it
 	$p = HTML::TokeParser->new(\$mech->content);
-	$token = $p->get_tag("div");
+	$token = $p->get_tag("span");
 
 	my $category;
+	my %availablecategory;
 	while ((!defined($category)) && (my $token = $p->get_tag("a"))) {
-		if($p->get_trimmed_text eq $tree[1]) {
+		my $categoryname = $p->get_trimmed_text;
+		if($categoryname eq $tree[1]) {
 			$category = $token->[1]{href};
 		}
+		$availablecategory{$categoryname} = 1;
+		$token = $p->get_tag("span");
 	}
 	$category =~ s/.*\('(.*?)'\)$/$1/;
-	die "Error 6 : $tree[1] does not exist. Check argument to -a option." if (!defined($category));
 
-	# We need to load the category chosed on command line to find branchID
+	if (!defined($category)) {
+		reporterror("Path $tree[1] does not exist", "The value '$tree[1]' requested in your path does not exist. Existing value at this path level are :",%availablecategory);
+		die "Error 6 : $tree[1] does not exist. Check argument to -a option.";
+	}
+
+	# We need to load the category chosen on command line to find branchID
 	$mech->get($opts{'u'}.'standard/gui/tree.jsp?category='.$category.'&expand=false&forceLoad=false&reload=false&scroll=0');
 	debug_url($mech, '070', $opts{'v'});
 	die "Error 7 : Can't load standard/gui/tree.jsp?category=$category ..." if (!$mech->success());
 
 	# We loop until last supplied branchID
 	my $branchId;
+	my $i=0;
 	for (2..$#tree) {
 		undef $branchId;
+		$i++;
 
 		# find branch
 		$p = HTML::TokeParser->new(\$mech->content);
-		$token = $p->get_tag("div");
+		$token = $p->get_tag("span");
 
-		while ((!defined($branchId)) && (my $token = $p->get_tag("a"))) {
-			if($p->get_trimmed_text eq $tree[$_]) {
+		my %availablebranch;
+		while ((!defined($branchId)) && (my $token = $p->get_tag("div"))) {
+			next if (length($p->get_text) != $i*3);
+			$token = $p->get_tag("span");
+			$token = $p->get_tag("span");
+			$token = $p->get_tag("a");
+
+			my $branchname = $p->get_trimmed_text;
+			if($branchname eq $tree[$_]) {
 				$branchId = $token->[1]{href};
 			}
+			$availablebranch{$branchname} = 1;
 		}
-		$branchId =~ s/.*\((\d+),\s+.*/$1/;
+
 		debug_url($mech, "08".$_, $opts{'v'});
-		die "Error 8.$_ : $tree[$_] does not exist" if (!defined($branchId));
+
+		if (!defined($branchId)) {
+			reporterror("Path $tree[$_] does not exist", "The value '$tree[$_]' requested in your path does not exist. Existing value at this path level are :",%availablebranch);
+			die "Error 8.$_ : $tree[$_] does not exist";
+		}
+
+		$branchId =~ s/.*\((\d+),\s+.*/$1/;
 	
 		if ($_ == $#tree) {
 			$mech->get($opts{'u'}.'standard/gui/tree.jsp?selectId='.$branchId.'&reset=true&forceLoad=false&scroll=0');
 		} else {
 			$mech->get($opts{'u'}.'standard/gui/tree.jsp?branchId='.$branchId.'&expand=false&forceLoad=false&reload=false&scroll=0');
 		}
+
 	}
 
 	$opts{'n'} = $branchId;
@@ -736,6 +738,36 @@ sub ics_output {
 	}
 }
 
+sub reporterror {
+	my ($summary, $desc1, %desc2) = @_;
+
+
+	my ($tssec,$tsmin,$tshour,$tsmday,$tsmon,$tsyear,$tswday,$tsyday,$tsisdst) = gmtime();
+	my $dtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour, $tsmin, $tssec);
+	my $edtstamp = sprintf("%02d%02d%02dT%02d%02d%02dZ", $tsyear+1900, $tsmon + 1, $tsmday, $tshour+2, $tsmin, $tssec);
+
+	print "BEGIN:VCALENDAR\n";                                                                                                                                                                                                                                                                                                    
+	print "VERSION:2.0\n";                                                                                                                                                                                                                                                                                                        
+	print "PRODID:-//Jeb//edt.pl//EN\n";                                                                                                                                                                                                                                                                                          
+	print "BEGIN:VTIMEZONE\n";                                                                                                                                                                                                                                                                                                    
+	print "X-WR-CALNAME:ADE2ics\n";                                                                                                                                                                                                                                                                                               
+	print "TZID:\"GMT +0100 (Standard) / GMT +0200 (Daylight)\"\n";                                                                                                                                                                                                                                                              
+	print "END:VTIMEZONE\n";                                                                                                                                                                                                                                                                                                      
+	print "METHOD:PUBLISH\n";                                                                                                                                                                                                                                                                                                     
+	print "BEGIN:VEVENT\n";
+	print "DTSTART:$dtstamp\n";
+	print "DTEND:$edtstamp\n";
+	print "DTSTAMP:$dtstamp\n";
+	print "UID:edt-out\n";
+	print "SUMMARY:$summary\n";
+	print "DESCRIPTION:";
+	print "$desc1".'\n';
+	print "$_".'\n' foreach (sort keys %desc2);
+	print "\n";
+	print "END:VEVENT\n";
+	print "END:VCALENDAR\n";
+}
+
 sub debug_url {
 	my ($mech, $file_number, $d) = @_;
 
@@ -752,6 +784,10 @@ sub debug_url {
 __END__
 
 History (doesn't follow commit revision)
+
+Revision 3.4 2010/05/08
+Improve output when path (-a) is invalid
+	now return a valid calendar event talling what part is incorrect and what value could be used
 
 Revision 3.3 2010/05/06
 Change option -d by option -v (for verbose/debug)
