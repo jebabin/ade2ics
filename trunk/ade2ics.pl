@@ -303,7 +303,10 @@ if ($opts{'a'}) {
 
 		my %availablebranch;
 		while ((!defined($branchId)) && (my $token = $p->get_tag("div"))) {
-			next if (length($p->get_text) != $i*3);
+			my $text = $p->get_text;                                                                                                                                                                                                                                                                            
+			$text = $1 if ($text =~  /(.*)\[IMG\]/);                                                                                                                                                                                                                                                            
+
+			next if (length($text) != $i*3);                                  
 			$token = $p->get_tag("span");
 			$token = $p->get_tag("span");
 			$token = $p->get_tag("a");
