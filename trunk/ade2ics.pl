@@ -680,7 +680,7 @@ sub ics_output {
 		
 		$date =~ m|(\d+)/(\d+)/(\d+)|;
 		my $ics_day = sprintf("%02d%02d%02d",$3,$2,$1);
-		$hour =~ m|(\d+)[h:](\d+)|;
+		$hour =~ m|(\d+)[h:](\d+)|i;
 		
 		my $ics_start_hour = $1;
 		my $ics_start_minute = $2;
