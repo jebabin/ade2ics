@@ -364,45 +364,45 @@ debug_url($mech, '102', $opts{'v'});
 die "Error 10.2 : failed to load config page." if (!$mech->success());
 # Activity / Activités
 $mech->field("showTabActivity", "true");	# Nom
-$mech->field("showTabWeek", "false");	# Semaine
-$mech->field("showTabDay", "false");		# Jour
-$mech->field("showTabStage", "false");	# Stage
+$mech->field("showTabWeek", undef);	# Semaine
+$mech->field("showTabDay", undef);		# Jour
+$mech->field("showTabStage", undef);	# Stage
 $mech->field("showTabDate", "true");		# Date
 $mech->field("showTabHour", "true");		# Heure
-$mech->field("aC", "false");				# Code
-$mech->field("aTy", "false");			# Type
-$mech->field("aUrl", "false");			# Url
+$mech->field("aC", undef);				# Code
+$mech->field("aTy", undef);			# Type
+$mech->field("aUrl", undef);			# Url
 $mech->field("showTabDuration", "true");	# Durée
-$mech->field("aSize", "false");			# Capacité
-$mech->field("aMx", "false");			# Nombre de siøges
-$mech->field("aSl", "false");			# Siøges disponibles
-$mech->field("aCx", "false");			# Code X
-$mech->field("aCy", "false");			# Code Y
-$mech->field("aCz", "false");			# Code Z
-$mech->field("aTz", "false");			# Fuseau horaire
-$mech->field("aN", "false");				# Notes
-$mech->field("aNe", "false");			# Note de séance
+$mech->field("aSize", undef);			# Capacité
+$mech->field("aMx", undef);			# Nombre de siøges
+$mech->field("aSl", undef);			# Siøges disponibles
+$mech->field("aCx", undef);			# Code X
+$mech->field("aCy", undef);			# Code Y
+$mech->field("aCz", undef);			# Code Z
+$mech->field("aTz", undef);			# Fuseau horaire
+$mech->field("aN", undef);				# Notes
+$mech->field("aNe", undef);			# Note de séance
 
 # Trainees / Etudiants
 $mech->field("showTabTrainees", "true");	# Nom
-$mech->field("sC", "false");
-$mech->field("sTy", "false");
-$mech->field("sUrl", "false");
-$mech->field("sE", "false");
-$mech->field("sM", "false");
-$mech->field("sJ", "false");
-$mech->field("sA1", "false");
-$mech->field("sA2", "false");
-$mech->field("sZp", "false");
-$mech->field("sCi", "false");
-$mech->field("sSt", "false");
-$mech->field("sCt", "false");
-$mech->field("sT", "false");
-$mech->field("sF", "false");
-$mech->field("sCx", "false");
-$mech->field("sCy", "false");
-$mech->field("sCz", "false");
-$mech->field("sTz", "false");
+$mech->field("sC", undef);
+$mech->field("sTy", undef);
+$mech->field("sUrl", undef);
+$mech->field("sE", undef);
+$mech->field("sM", undef);
+$mech->field("sJ", undef);
+$mech->field("sA1", undef);
+$mech->field("sA2", undef);
+$mech->field("sZp", undef);
+$mech->field("sCi", undef);
+$mech->field("sSt", undef);
+$mech->field("sCt", undef);
+$mech->field("sT", undef);
+$mech->field("sF", undef);
+$mech->field("sCx", undef);
+$mech->field("sCy", undef);
+$mech->field("sCz", undef);
+$mech->field("sTz", undef);
 
 # Instructors / Enseignants
 $mech->field("showTabInstructors", "true");	# Nom
