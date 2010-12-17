@@ -21,7 +21,7 @@
 #
 # TODO
 # - Base config should be in an external file.
-# - Support multiple value for -a and -n option to load more than 1 BranchID at once
+# - Support multiple value for -a option to load more than 1 BranchID at once (already available for -n X,Y,Z)
 # - TZID should not be statically set.
 # - Add possibility to stop the script before starting to log on the website if option y or c match some string
 #	(would be usefull for the cgi version where some users still try to load older project no longer existing
@@ -142,7 +142,7 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		print STDERR "\nSome examples:\n";
 		print STDERR " $0 -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
 		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
-		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717\n";
+		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717,1320,1321,1322,1324,1334,1324\n";
 		print STDERR " even more:\n";
 		print STDERR " $0 -c -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
 		print STDERR " $0 -w -c -l keryell -p some_password -y '2007-2008' -a 'Enseignants:H à K:KERYELL Ronan'\n";
@@ -197,10 +197,12 @@ if ($opts{'w'}) {
 }
 
 push (@tree,$opts{'y'});
-foreach (split(':', $opts{'a'})) {
-	push (@tree,$_);
-	# $opts{'a'} is ProjectID:Category:branchId:branchId:branchId but of course in text instead of ID
-	# The job is to find the latest branchId ID then parse schedule
+if (defined($opts{'a'})) {
+	foreach (split(':', $opts{'a'})) {
+		push (@tree,$_);
+		# $opts{'a'} is ProjectID:Category:branchId:branchId:branchId but of course in text instead of ID
+		# The job is to find the latest branchId ID then parse schedule
+    	}
 }
 
 my $mech = WWW::Mechanize->new(agent => 'ADEics 0.2', cookie_jar => {});
