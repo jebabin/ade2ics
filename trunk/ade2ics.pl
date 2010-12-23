@@ -149,8 +149,8 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		print STDERR " -v : enable verbose/debug output (will write file on disk)\n";
 		print STDERR "\nSome examples:\n";
 		print STDERR " $0 -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
-		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
-		print STDERR " $0 -e Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717,1320,1321,1322,1324,1334,1324\n";
+		print STDERR " $0 -s Ensimag -p some_password -y 'ENSIMAG2009-2010' -a 'Enseignants:M:Moy Matthieu'\n";
+		print STDERR " $0 -s Ensimag -p some_password -y 'ENSIMAG2009-2010' -n 717,1320,1321,1322,1324,1334,1324\n";
 		print STDERR " even more:\n";
 		print STDERR " $0 -c -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
 		print STDERR " $0 -w -c -l keryell -p some_password -y '2007-2008' -a 'Enseignants:H à K:KERYELL Ronan'\n";
