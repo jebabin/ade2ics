@@ -102,6 +102,14 @@ $default_config{'UT'}{'w'} = 0;
 $default_config{'UT'}{'c'} = 1;
 $default_config{'UT'}{'d'} = 'univ-tours.fr'; # univ-tours.fr or etu.univ-tours.fr
 
+# For Univ Brest (UBO)
+$default_config{'UBO'}{'u'} = 'http://ent.univ-brest.fr/ade/';
+$default_config{'UBO'}{'l'} = '';
+$default_config{'UBO'}{'p'} = ''; # Should be commented if your ADE system don't need a password
+$default_config{'UBO'}{'w'} = 0;
+$default_config{'UBO'}{'c'} = 1;
+$default_config{'UBO'}{'d'} = undef;
+
 my %opts;
 my @tree;
 
@@ -792,10 +800,11 @@ __END__
 
 History (doesn't follow commit revision)
 
-Reversion 3.5 TBD
+Reversion 3.5 2010/12/23
 Improved tree parsing
 Improved hours parsing
 Fix a problem with some version of module used by WWW::Mechanize
+Support for UBO
 
 Revision 3.4 2010/05/08
 Improve output when path (-a) is invalid
