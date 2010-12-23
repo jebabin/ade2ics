@@ -145,7 +145,7 @@ if (!defined $ENV{REQUEST_METHOD}) {
 		print STDERR "\t if you just use -p without password, you will be prompted for it. recommanded for security !\n";
 		print STDERR " -w : write the schedule in time-stamped \"calendar.\" file to track modifications to your calendar.\n";
 		print STDERR " -c : enable CAS Authentification, as used at Telecom Bretagne\n";
-		print STDERR " -d : set domain name to use for CAS authentification\n";
+		print STDERR " -d : set realm to use for CAS authentification (useless for most CAS installation)\n";
 		print STDERR " -v : enable verbose/debug output (will write file on disk)\n";
 		print STDERR "\nSome examples:\n";
 		print STDERR " $0 -l jebabin -p -y '2007-2008' -a 'Etudiants:FIP:FIP 3A 2007-2008:BABIN Jean-Edouard'\n";
